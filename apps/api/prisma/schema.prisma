@@ -1,0 +1,102 @@
+// Personal Task Manager — data model.
+//
+// Two forward-looking decisions are baked in here, both from the brief:
+//   1. Categories are a table, not an enum, so adding one is a row insert
+//      rather than a migration plus a UI change.
+//   2. Tasks already carry a `userId`. There is a single env-configured user
+//      today and no auth, but modelling ownership now means adding JWT login
+//      and a second family member later is additive — no backfill, no rewrite
+//      of every query.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Eisenhower matrix classification.
+enum Quadrant {
+  urgent_important
+  urgent_only
+  important_only
+  neither
+}
+
+enum TaskStatus {
+  pending
+  in_progress
+  done
+}
+
+model User {
+  id    String  @id @default(uuid()) @db.Uuid
+  email String  @unique
+  name  String?
+
+  /// Null until real auth lands; the single-user mode never reads it.
+  passwordHash String? @map("password_hash")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tasks Task[]
+
+  @@map("users")
+}
+
+model Category {
+  id        String  @id @default(uuid()) @db.Uuid
+  name      String  @unique
+  /// Hex colour the UI uses for chips and matrix cards.
+  color     String?
+  sortOrder Int     @default(0) @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tasks Task[]
+
+  @@index([sortOrder])
+  @@map("categories")
+}
+
+model Task {
+  id    String  @id @default(uuid()) @db.Uuid
+  title String
+  notes String?
+
+  categoryId String?   @map("category_id") @db.Uuid
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  quadrant Quadrant   @default(neither)
+  status   TaskStatus @default(pending)
+
+  /// Date-only: many tasks in this backlog never get a deadline.
+  dueDate DateTime? @map("due_date") @db.Date
+
+  /// Who is responsible — self, a family member, or "outsource". Free text on
+  /// purpose: this is delegation, distinct from `userId` (account ownership).
+  owner String?
+
+  /// Optional finer grouping, so a one-off cluster of tasks does not need a
+  /// whole new top-level category.
+  tag String?
+
+  userId String @map("user_id") @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  /// Set when status becomes `done`, cleared if the task is reopened.
+  completedAt DateTime? @map("completed_at")
+
+  // Shaped for the dashboard's hot paths: pending/overdue lookups, the matrix
+  // view, and the category grouping.
+  @@index([userId, status, dueDate])
+  @@index([userId, quadrant, status])
+  @@index([userId, categoryId])
+  @@index([userId, tag])
+  @@map("tasks")
+}

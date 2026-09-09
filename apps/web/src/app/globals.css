@@ -1,0 +1,124 @@
+@import 'tailwindcss';
+
+/**
+ * Semantic colour tokens.
+ *
+ * Components reference these (`bg-surface`, `text-muted`, `border-line`)
+ * rather than raw palette shades, so the whole look is tuned from this block.
+ *
+ * This app is light-mode only by design — there is no dark variant, and
+ * `color-scheme: light` below opts the page out of the OS preference so it
+ * renders the same on a machine set to dark.
+ */
+
+:root {
+  /* Pins native UI — form controls, scrollbars, the date picker — to light.
+     Without this they follow the OS and render dark against a light page. */
+  color-scheme: light;
+
+  --canvas: #f4f6fa;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --surface-hover: #eef2f7;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --ink: #0f172a;
+  --muted: #5b6b85;
+  --faint: #94a3b8;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-ink: #ffffff;
+  --accent-soft: rgb(79 70 229 / 0.1);
+  --ring: rgb(79 70 229 / 0.45);
+
+  /* Eisenhower quadrants: fill / edge / text. */
+  --q-urgent-bg: rgb(239 68 68 / 0.08);
+  --q-urgent-line: rgb(239 68 68 / 0.28);
+  --q-urgent-ink: #b91c1c;
+
+  --q-delegate-bg: rgb(245 158 11 / 0.1);
+  --q-delegate-line: rgb(245 158 11 / 0.3);
+  --q-delegate-ink: #b45309;
+
+  --q-schedule-bg: rgb(14 165 233 / 0.09);
+  --q-schedule-line: rgb(14 165 233 / 0.28);
+  --q-schedule-ink: #0369a1;
+
+  --q-backlog-bg: rgb(100 116 139 / 0.08);
+  --q-backlog-line: rgb(100 116 139 / 0.24);
+  --q-backlog-ink: #475569;
+
+  --danger: #dc2626;
+  --warning: #b45309;
+  --success: #059669;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-hover: var(--surface-hover);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-q-urgent-bg: var(--q-urgent-bg);
+  --color-q-urgent-line: var(--q-urgent-line);
+  --color-q-urgent-ink: var(--q-urgent-ink);
+  --color-q-delegate-bg: var(--q-delegate-bg);
+  --color-q-delegate-line: var(--q-delegate-line);
+  --color-q-delegate-ink: var(--q-delegate-ink);
+  --color-q-schedule-bg: var(--q-schedule-bg);
+  --color-q-schedule-line: var(--q-schedule-line);
+  --color-q-schedule-ink: var(--q-schedule-ink);
+  --color-q-backlog-bg: var(--q-backlog-bg);
+  --color-q-backlog-line: var(--q-backlog-line);
+  --color-q-backlog-ink: var(--q-backlog-ink);
+
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-success: var(--success);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@layer base {
+  body {
+    /* The generated stylesheet hard-coded Arial here, outside any cascade
+       layer, which silently beat both the Geist variable and the utility
+       classes on <body>. */
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  ::selection {
+    background: var(--accent-soft);
+  }
+
+  /* Checkboxes render in the accent rather than the browser default blue. */
+  input[type='checkbox'] {
+    accent-color: var(--accent);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 1px;
+  }
+}
+
+@layer utilities {
+  /* A card lifted off the canvas: hairline edge plus a soft drop shadow. */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    box-shadow:
+      0 1px 2px rgb(2 6 23 / 0.04),
+      0 1px 3px rgb(2 6 23 / 0.06);
+  }
+}
