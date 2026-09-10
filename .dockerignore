@@ -1,0 +1,21 @@
+# Host node_modules must never enter the image: pnpm's symlink layout is
+# platform-specific, and copying it over the container's install replaces
+# working binaries with Windows ones (Prisma silently loses its CLI).
+**/node_modules
+
+# Build output is produced inside the image.
+**/dist
+**/.next
+**/*.tsbuildinfo
+
+# Never bake secrets into a layer.
+**/.env
+**/.env.*
+!**/.env.example
+
+.git
+.gitignore
+**/coverage
+**/*.log
+docs
+README.md

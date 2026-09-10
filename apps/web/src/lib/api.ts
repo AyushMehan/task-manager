@@ -17,7 +17,12 @@ import type {
  * so a mobile client can later hit exactly these endpoints.
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+/**
+ * Empty by default: the app calls `/api/*` on its own origin and Next rewrites
+ * that to the API service. Set NEXT_PUBLIC_API_URL only to point a browser at
+ * an API on a different host.
+ */
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 export class ApiError extends Error {
   constructor(
@@ -45,7 +50,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<Envelope<T>
   } catch {
     // A network-level failure usually means the API process is not running,
     // which is worth saying plainly rather than surfacing "Failed to fetch".
-    throw new ApiError(0, 'NETWORK_ERROR', `Could not reach the API at ${BASE_URL}`);
+    throw new ApiError(0, 'NETWORK_ERROR', `Could not reach the API at ${BASE_URL || 'this origin'}`);
   }
 
   if (response.status === 204) return { data: undefined as T };
