@@ -1,24 +1,62 @@
 # Running it for real
 
-The app runs as three containers, so a reboot brings it back on its own.
-No dev servers, no commands to remember.
+Open **<http://task-manager>** (or <http://localhost>). It always answers.
+
+Docker is deliberately **not** started at login — it costs 2GB+ of RAM sitting
+idle. Instead a ~55MB Node process (the "gateway") holds port 80 permanently:
+
+- Docker running → it proxies straight through to the app.
+- Docker off → it serves a small page with a **Start it** button, which
+  launches Docker Desktop and reloads into the app once it answers. Measured
+  cold start: about 20 seconds.
+
+So the URL is always live, and the heavy part only runs when you ask for it.
+
+## The gateway
+
+Registered as the `TaskManagerGateway` logon task, launched hidden via
+`tools/gateway/start-gateway.vbs`. Zero dependencies — plain Node.
 
 ```bash
-docker compose up -d --build    # first run, and after any code change
-docker compose up -d            # any other time
+node tools/gateway/server.mjs          # run by hand (port 80)
+GATEWAY_PORT=8080 node tools/gateway/server.mjs
 ```
 
-Then open <http://localhost:3000>.
+| Endpoint | Purpose |
+|---|---|
+| `/__gateway/status` | `{"up":true\|false}` — whether the app answers on :3000 |
+| `/__gateway/start` | POST; launches Docker Desktop |
 
-`restart: unless-stopped` means Docker restarts all three on boot. The one
-manual step left is Docker Desktop itself — turn on **Settings → General →
-Start Docker Desktop when you sign in** and there is nothing to do at all.
+Manage the task with `Get-ScheduledTask TaskManagerGateway`,
+`Start-ScheduledTask`, `Unregister-ScheduledTask`.
+
+### The hostname
+
+`http://task-manager` needs one line in the hosts file, which requires
+administrator rights. In an **elevated** PowerShell:
+
+```powershell
+Add-Content -Path "$env:SystemRoot\System32\drivers\etc\hosts" -Value "`n127.0.0.1`ttask-manager"
+```
+
+Until then, <http://localhost> works identically.
+
+## Containers
+
+```bash
+docker compose up -d --build    # after a code change
+docker compose up -d            # start by hand
+```
+
+`restart: unless-stopped` means the containers come back by themselves whenever
+Docker Desktop starts — which is why the Start button is all it takes.
 
 ## What runs where
 
 | Service | Port | Notes |
 |---|---|---|
-| `web` | 3000 | Next.js production server. The only port you need open. |
+| gateway | 80 | Always on (~55MB). Proxies to `web`, or serves the start page. |
+| `web` | 3000 | Next.js production server, behind the gateway. |
 | `api` | 4000 | Express. Exposed for the importer and `curl`; the browser never calls it directly. |
 | `postgres` | 5433 | Data lives in the `task-manager-pgdata` volume. |
 

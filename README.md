@@ -20,6 +20,13 @@ pnpm --filter @task-manager/api seed              # 10 categories + owner accoun
 
 ## Running it
 
+Open **<http://task-manager>** (or <http://localhost>) — always available.
+A small always-on gateway serves that URL; if Docker is off it offers a button
+to start it, and the app is up about 20 seconds later. Docker itself does not
+run at login, to keep the RAM back. See [docs/running.md](docs/running.md).
+
+### By hand
+
 ```bash
 pnpm db:up    # if Docker was restarted
 pnpm dev      # starts both API (:4000) and web (:3000)
