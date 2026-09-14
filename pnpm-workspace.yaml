@@ -1,0 +1,15 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# pnpm 11 stopped reading these from the "pnpm" field in package.json and reads
+# them here instead. Declared in both places so either version behaves the same.
+onlyBuiltDependencies:
+  - "@prisma/client"
+  - "@prisma/engines"
+  - esbuild
+  - prisma
+
+ignoredBuiltDependencies:
+  - msgpackr-extract
+  - workerd

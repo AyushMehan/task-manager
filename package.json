@@ -1,0 +1,32 @@
+{
+  "name": "task-manager",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "dev:api": "pnpm --filter @task-manager/api dev",
+    "dev:web": "pnpm --filter @task-manager/web dev",
+    "build": "pnpm -r build",
+    "test": "pnpm --filter @task-manager/api test",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "dev": "pnpm -r --parallel dev",
+    "setup": "pnpm install && pnpm db:up && pnpm --filter @task-manager/api prisma:deploy && pnpm --filter @task-manager/api seed"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "prisma"
+    ],
+    "ignoredBuiltDependencies": [
+      "msgpackr-extract",
+      "workerd"
+    ]
+  },
+  "packageManager": "pnpm@10.33.0"
+}

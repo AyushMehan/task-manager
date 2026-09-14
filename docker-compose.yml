@@ -1,0 +1,72 @@
+# The whole stack, so a reboot brings the app back without anything by hand.
+#
+#   docker compose up -d --build      first run, or after a code change
+#   docker compose up -d              after a reboot (if not already running)
+#
+# `restart: unless-stopped` means Docker starts these on boot; the only manual
+# step left is Docker Desktop itself, which has a "start on login" setting.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: task-manager-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: taskmanager
+      POSTGRES_PASSWORD: taskmanager
+      POSTGRES_DB: taskmanager
+    ports:
+      # Exposed on the host so the importer and psql can reach it directly.
+      - "5433:5432"
+    volumes:
+      - task-manager-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskmanager -d taskmanager"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: task-manager-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # `postgres` is the compose service name on the private network.
+      DATABASE_URL: postgresql://taskmanager:taskmanager@postgres:5432/taskmanager?schema=public
+      NODE_ENV: production
+      PORT: 4000
+      LOG_LEVEL: info
+      # The browser never calls the API directly — the web service proxies it —
+      # so no cross-origin requests need allowing.
+      CORS_ORIGINS: ""
+      DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL:-mehan.ayush16@gmail.com}
+      DEFAULT_USER_NAME: ${DEFAULT_USER_NAME:-Ayush}
+    ports:
+      # Host-exposed for the importer and for curl; the web app uses the
+      # private network instead.
+      - "4000:4000"
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Next bakes rewrites at build time, so the proxy target is a build arg.
+        API_INTERNAL_URL: http://api:4000
+    container_name: task-manager-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      # Server-side only: where the Next rewrite forwards /api/* to.
+      API_INTERNAL_URL: http://api:4000
+    ports:
+      - "3000:3000"
+
+volumes:
+  task-manager-pgdata:
