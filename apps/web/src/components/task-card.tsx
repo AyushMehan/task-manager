@@ -1,20 +1,24 @@
 'use client';
 
 import { useDraggable } from '@dnd-kit/core';
-import { Check, GripVertical } from 'lucide-react';
+import { useState } from 'react';
+import { Check, GripVertical, Pencil } from 'lucide-react';
 import type { TaskDto } from '@task-manager/shared';
 import { useUpdateTask } from '@/hooks/use-tasks';
 import { cn, formatDueDate } from '@/lib/utils';
+import { TaskEditDialog } from '@/components/task-edit-dialog';
 
 /** The visual card, with no drag wiring — shared by the grid and the overlay. */
 function CardBody({
   task,
   handle,
   onToggle,
+  onEdit,
 }: {
   task: TaskDto;
   handle?: React.ReactNode;
   onToggle?: () => void;
+  onEdit?: () => void;
 }) {
   const done = task.status === 'done';
   const due = formatDueDate(task.dueDate);
@@ -39,7 +43,21 @@ function CardBody({
       </button>
 
       <div className="min-w-0 flex-1">
-        <p className={cn('break-words', done && 'text-faint line-through')}>{task.title}</p>
+        <div className="flex items-start gap-2">
+          <p className={cn('min-w-0 flex-1 break-words', done && 'text-faint line-through')}>
+            {task.title}
+          </p>
+          {onEdit && (
+            <button
+              type="button"
+              onClick={onEdit}
+              aria-label={`Edit ${task.title}`}
+              className="shrink-0 rounded p-0.5 text-faint transition-colors hover:bg-surface-hover hover:text-ink"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
 
         <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px]">
           {task.category && (
@@ -97,41 +115,46 @@ export function TaskCardOverlay({ task }: { task: TaskDto }) {
  */
 export function TaskCard({ task, draggable = true }: { task: TaskDto; draggable?: boolean }) {
   const updateTask = useUpdateTask();
+  const [isEditing, setIsEditing] = useState(false);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
     disabled: !draggable,
   });
 
   return (
-    <div
-      ref={setNodeRef}
-      className={cn(
-        'card flex items-start gap-2 rounded-lg p-2.5 text-sm transition-opacity',
-        isDragging && 'opacity-40',
-      )}
-    >
-      <CardBody
-        task={task}
-        onToggle={() =>
-          updateTask.mutate({
-            id: task.id,
-            input: { status: task.status === 'done' ? 'pending' : 'done' },
-          })
-        }
-        handle={
-          draggable ? (
-            <button
-              type="button"
-              {...listeners}
-              {...attributes}
-              aria-label={`Drag ${task.title}`}
-              className="mt-0.5 shrink-0 cursor-grab touch-none text-faint hover:text-muted active:cursor-grabbing"
-            >
-              <GripVertical className="h-4 w-4" />
-            </button>
-          ) : undefined
-        }
-      />
-    </div>
+    <>
+      <div
+        ref={setNodeRef}
+        className={cn(
+          'card flex items-start gap-2 rounded-lg p-2.5 text-sm transition-opacity',
+          isDragging && 'opacity-40',
+        )}
+      >
+        <CardBody
+          task={task}
+          onEdit={() => setIsEditing(true)}
+          onToggle={() =>
+            updateTask.mutate({
+              id: task.id,
+              input: { status: task.status === 'done' ? 'pending' : 'done' },
+            })
+          }
+          handle={
+            draggable ? (
+              <button
+                type="button"
+                {...listeners}
+                {...attributes}
+                aria-label={`Drag ${task.title}`}
+                className="mt-0.5 shrink-0 cursor-grab touch-none text-faint hover:text-muted active:cursor-grabbing"
+              >
+                <GripVertical className="h-4 w-4" />
+              </button>
+            ) : undefined
+          }
+        />
+      </div>
+      {isEditing && <TaskEditDialog task={task} onClose={() => setIsEditing(false)} />}
+    </>
   );
 }

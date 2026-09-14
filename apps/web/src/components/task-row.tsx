@@ -1,6 +1,7 @@
 'use client';
 
-import { Check, Trash2, Undo2 } from 'lucide-react';
+import { useState } from 'react';
+import { Check, Pencil, Trash2, Undo2 } from 'lucide-react';
 import {
  QUADRANTS,
  QUADRANT_LABELS,
@@ -13,6 +14,7 @@ import {
 } from '@task-manager/shared';
 import { useDeleteTask, useUpdateTask } from '@/hooks/use-tasks';
 import { cn, formatDueDate } from '@/lib/utils';
+import { TaskEditDialog } from '@/components/task-edit-dialog';
 
 const dueToneStyles: Record<string, string> = {
  overdue: 'text-danger font-medium',
@@ -23,8 +25,8 @@ const dueToneStyles: Record<string, string> = {
 };
 
 /**
- * One task in the list view, with category, quadrant, status and due date all
- * editable in place — no modal, no full form.
+ * One task in the list view, with common fields editable in place and the
+ * pencil action opening the complete editor.
  */
 export function TaskRow({
  task,
@@ -39,6 +41,7 @@ export function TaskRow({
 }) {
  const updateTask = useUpdateTask();
  const deleteTask = useDeleteTask();
+ const [isEditing, setIsEditing] = useState(false);
 
  const done = task.status === 'done';
  const due = formatDueDate(task.dueDate);
@@ -48,6 +51,7 @@ export function TaskRow({
  }
 
  return (
+ <>
  <div
  className={cn(
  'group flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line px-3 py-2.5 last:border-0',
@@ -144,6 +148,14 @@ export function TaskRow({
  </select>
 
  <div className="flex shrink-0 items-center gap-1">
+ <button
+ type="button"
+ onClick={() => setIsEditing(true)}
+ aria-label={`Edit ${task.title}`}
+ className="rounded p-1 text-faint transition-colors hover:bg-surface-hover hover:text-ink"
+ >
+ <Pencil className="h-3.5 w-3.5" />
+ </button>
  {done && (
  <button
  type="button"
@@ -164,6 +176,8 @@ export function TaskRow({
  </button>
  </div>
  </div>
+ {isEditing && <TaskEditDialog task={task} onClose={() => setIsEditing(false)} />}
+ </>
  );
 }
 
